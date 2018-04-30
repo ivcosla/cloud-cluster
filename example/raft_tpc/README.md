@@ -1,5 +1,5 @@
 
-This example uses Consul, Serf and Raft to deploy a 3 nodes cluster. The FSM implements a simple key value store. Every 5 seconds, the leader will update the state with random values.
+This example uses Consul, Serf and Raft to deploy a 3 nodes cluster. The FSM implements a simple key value store. Every 5 seconds, the leader will update the state with random values. Raft uses a network transport built on top of a TCP transport layer.
 
 # Usage
 
