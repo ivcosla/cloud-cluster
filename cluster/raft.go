@@ -9,8 +9,12 @@ import (
 	"github.com/hashicorp/raft"
 )
 
+const (
+	raftTimeout = 10 * time.Second
+)
+
 func (s *Server) SetupStreamRaft(layer raft.StreamLayer, fsm *raft.FSM) error {
-	trans := raft.NewNetworkTransport(layer, 3, s.config.RaftConfig.CommitTimeout, s.config.RaftConfig.LogOutput)
+	trans := raft.NewNetworkTransport(layer, 3, raftTimeout, s.config.RaftConfig.LogOutput)
 	return s.setupRaft(trans, fsm)
 }
 
