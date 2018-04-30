@@ -16,6 +16,10 @@ func (s *Server) SetupSerf() error {
 	conf.Tags["id"] = s.config.NodeName
 	conf.Tags["raft"] = fmt.Sprintf("%s:%d", s.config.RaftConfig.BindAddr, s.config.RaftConfig.BindPort)
 
+	for k, v := range s.config.Tags {
+		conf.Tags[k] = v
+	}
+
 	conf.NodeName = s.config.NodeName
 	conf.MemberlistConfig.LogOutput = s.config.LogOutput
 	conf.LogOutput = s.config.LogOutput
@@ -76,8 +80,10 @@ func (s *Server) nodeJoin(me serf.MemberEvent) {
 		s.logger.Printf("[INFO]: Member join: %s\n", m.Name)
 	}
 
-	if atomic.LoadInt32(&s.config.RaftConfig.BootstrapExpected) != 0 {
-		s.tryBootstrap()
+	if s.raft != nil {
+		if atomic.LoadInt32(&s.config.RaftConfig.BootstrapExpected) != 0 {
+			s.tryBootstrap()
+		}
 	}
 }
 

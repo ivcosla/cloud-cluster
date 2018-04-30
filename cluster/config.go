@@ -12,6 +12,7 @@ type Config struct {
 	NodeName    string
 	ServiceName string
 	Tag         string
+	Tags        map[string]string
 
 	SerfConfig   *serf.Config
 	ConsulConfig *consul.Config
@@ -25,6 +26,7 @@ func DefaultConfig() *Config {
 		NodeName:     "cluster",
 		ServiceName:  "cluster",
 		Tag:          "cluster",
+		Tags:         map[string]string{},
 		SerfConfig:   serf.DefaultConfig(),
 		ConsulConfig: consul.DefaultConfig(),
 		RaftConfig:   DefaultRaftConfig(),
