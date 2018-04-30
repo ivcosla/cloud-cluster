@@ -39,7 +39,7 @@ func (s *Server) registerSerf() error {
 	service := &consul.AgentServiceRegistration{
 		ID:      s.config.NodeName,
 		Name:    s.config.ServiceName,
-		Tags:    []string{s.config.Tag, "serf"},
+		Tags:    []string{"serf"},
 		Address: addr,
 		Port:    port,
 		Check: &consul.AgentServiceCheck{
@@ -73,7 +73,7 @@ func (s *Server) periodicHandler() {
 func (s *Server) bootstrap() error {
 
 	// Stop if we have already bootstraped everything
-	bootstrapExpect := atomic.LoadInt32(&s.config.RaftConfig.BootstrapExpected)
+	bootstrapExpect := atomic.LoadInt32(&s.config.BootstrapExpected)
 	if bootstrapExpect == 0 {
 		return nil
 	}
@@ -90,7 +90,7 @@ func (s *Server) bootstrap() error {
 			Datacenter: dc,
 		}
 
-		services, _, err := s.catalog.Service(s.config.ServiceName, s.config.Tag, opts)
+		services, _, err := s.catalog.Service(s.config.ServiceName, "serf", opts)
 		if err != nil {
 			return fmt.Errorf("failed to get the services: %v", err)
 		}

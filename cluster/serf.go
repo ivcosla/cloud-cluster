@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"sync/atomic"
 
 	"github.com/hashicorp/raft"
@@ -9,12 +8,10 @@ import (
 )
 
 func (s *Server) SetupSerf() error {
-
 	conf := s.config.SerfConfig
 	conf.Init()
 
 	conf.Tags["id"] = s.config.NodeName
-	conf.Tags["raft"] = fmt.Sprintf("%s:%d", s.config.RaftConfig.BindAddr, s.config.RaftConfig.BindPort)
 
 	for k, v := range s.config.Tags {
 		conf.Tags[k] = v
@@ -81,7 +78,7 @@ func (s *Server) nodeJoin(me serf.MemberEvent) {
 	}
 
 	if s.raft != nil {
-		if atomic.LoadInt32(&s.config.RaftConfig.BootstrapExpected) != 0 {
+		if atomic.LoadInt32(&s.config.BootstrapExpected) != 0 {
 			s.tryBootstrap()
 		}
 	}
@@ -119,7 +116,7 @@ func (s *Server) tryBootstrap() {
 		servers = append(servers, peer)
 	}
 
-	if len(servers) < int(atomic.LoadInt32(&s.config.RaftConfig.BootstrapExpected)) {
+	if len(servers) < int(atomic.LoadInt32(&s.config.BootstrapExpected)) {
 		return
 	}
 
@@ -131,5 +128,5 @@ func (s *Server) tryBootstrap() {
 		s.logger.Printf("Failed to bootstrap cluster: %v\n", err)
 	}
 
-	atomic.StoreInt32(&s.config.RaftConfig.BootstrapExpected, 0)
+	atomic.StoreInt32(&s.config.BootstrapExpected, 0)
 }

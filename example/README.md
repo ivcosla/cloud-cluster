@@ -12,7 +12,7 @@ consul agent -dev
 Deploy three servers:
 
 ```
-$ go run main.go --node-name one --bootstrap 3 --serf-port 8000
+$ go run main.go --node-name one --bootstrap 3 --serf-port 8000 --raft-port 5000
 
 $ go run main.go --node-name two --bootstrap 3 --serf-port 8001 --raft-port 5001
 
