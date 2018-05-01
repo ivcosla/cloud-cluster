@@ -9,38 +9,31 @@ import (
 	"github.com/hashicorp/raft"
 )
 
-type RaftConfig struct {
-	*raft.Config
+const (
+	raftTimeout = 10 * time.Second
+)
 
-	BindAddr string
-	BindPort int
-
-	BootstrapExpected int32
+func (s *Server) SetupStreamRaft(layer raft.StreamLayer, fsm *raft.FSM) error {
+	trans := raft.NewNetworkTransport(layer, 3, raftTimeout, s.config.RaftConfig.LogOutput)
+	return s.setupRaft(trans, fsm)
 }
 
-func DefaultRaftConfig() *RaftConfig {
-	c := &RaftConfig{
-		raft.DefaultConfig(),
-		"127.0.0.1", // BindAddr
-		5000,        // BindPort,
-		1,           // BootstrapExpected
-	}
-
-	return c
-}
-
-func (s *Server) SetupRaft(fsm *raft.FSM) error {
-	raftBind := fmt.Sprintf("%s:%d", s.config.RaftConfig.BindAddr, s.config.RaftConfig.BindPort)
-
-	addr, err := net.ResolveTCPAddr("tcp", raftBind)
+func (s *Server) SetupTCPRaft(bindAddr string, fsm *raft.FSM) error {
+	addr, err := net.ResolveTCPAddr("tcp", bindAddr)
 	if err != nil {
-		return fmt.Errorf("Cannot resolve raft bind addr %s: %v", raftBind, err)
+		return fmt.Errorf("Cannot resolve raft bind addr %s: %v", bindAddr, err)
 	}
 
-	trans, err := raft.NewTCPTransport(raftBind, addr, 5, 5*time.Second, os.Stderr)
+	trans, err := raft.NewTCPTransport(bindAddr, addr, 5, 5*time.Second, os.Stderr)
 	if err != nil {
 		return fmt.Errorf("Failed to create tcp transport: %v", err)
 	}
+
+	return s.setupRaft(trans, fsm)
+}
+
+func (s *Server) setupRaft(trans raft.Transport, fsm *raft.FSM) error {
+	s.config.Tags["raft"] = string(trans.LocalAddr())
 
 	s.config.RaftConfig.LogOutput = s.config.LogOutput
 	s.config.RaftConfig.LocalID = raft.ServerID(s.config.NodeName)
@@ -50,24 +43,24 @@ func (s *Server) SetupRaft(fsm *raft.FSM) error {
 	log := store
 	snap := raft.NewDiscardSnapshotStore()
 
-	s.config.RaftConfig.Config.NotifyCh = s.LeaderCh
+	s.config.RaftConfig.NotifyCh = s.LeaderCh
 
-	if s.config.RaftConfig.BootstrapExpected == 1 {
+	if s.config.BootstrapExpected == 1 {
 		configuration := raft.Configuration{
 			Servers: []raft.Server{
 				{
-					ID:      s.config.RaftConfig.Config.LocalID,
+					ID:      s.config.RaftConfig.LocalID,
 					Address: trans.LocalAddr(),
 				},
 			},
 		}
 
-		if err := raft.BootstrapCluster(s.config.RaftConfig.Config, log, stable, snap, trans, configuration); err != nil {
+		if err := raft.BootstrapCluster(s.config.RaftConfig, log, stable, snap, trans, configuration); err != nil {
 			return fmt.Errorf("Failed to bootstrap initial cluster: %v", err)
 		}
 	}
 
-	client, err := raft.NewRaft(s.config.RaftConfig.Config, *fsm, log, stable, snap, trans)
+	client, err := raft.NewRaft(s.config.RaftConfig, *fsm, log, stable, snap, trans)
 	if err != nil {
 		return fmt.Errorf("Failed to start raft: %v", err)
 	}

@@ -92,6 +92,8 @@ func (f *SimpleFSM) Restore(io.ReadCloser) error {
 
 // --- config
 
+var raftAddr string
+
 func readConfig() *cluster.Config {
 	config := cluster.DefaultConfig()
 
@@ -116,11 +118,11 @@ func readConfig() *cluster.Config {
 	}
 
 	if raftPort != nil && *raftPort != 0 {
-		config.RaftConfig.BindPort = *raftPort
+		raftAddr = fmt.Sprintf("127.0.0.1:%d", *raftPort)
 	}
 
 	if bootstrap != nil && *bootstrap != 1 {
-		config.RaftConfig.BootstrapExpected = int32(*bootstrap)
+		config.BootstrapExpected = int32(*bootstrap)
 	}
 
 	return config
@@ -134,7 +136,7 @@ func main() {
 
 	fsm := NewFSM()
 
-	if err := server.SetupRaft(&fsm); err != nil {
+	if err := server.SetupTCPRaft(raftAddr, &fsm); err != nil {
 		panic(err)
 	}
 
