@@ -179,7 +179,7 @@ func (s *Server) listen() {
 	for {
 		conn, err := s.rpcListener.Accept()
 		if err != nil {
-			s.logger.Printf("[ERR] nomad.rpc: failed to accept RPC conn: %v", err)
+			s.logger.Printf("[ERR] RPC: failed to accept RPC conn: %v", err)
 			continue
 		}
 
@@ -191,7 +191,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	buf := make([]byte, 1)
 	if _, err := conn.Read(buf); err != nil {
 		if err != io.EOF {
-			s.logger.Printf("[ERR] nomad.rpc: failed to read byte: %v", err)
+			s.logger.Printf("[ERR] RPC: failed to read byte: %v", err)
 		}
 		conn.Close()
 		return
@@ -202,7 +202,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	case pool.RpcRaft:
 		s.raftLayer.Handoff(conn)
 	default:
-		s.logger.Printf("[ERR] nomad.rpc: unrecognized RPC byte: %v", buf[0])
+		s.logger.Printf("[ERR] RPC: unrecognized RPC byte: %v", buf[0])
 		conn.Close()
 		return
 	}
