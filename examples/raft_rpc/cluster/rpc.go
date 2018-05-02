@@ -4,12 +4,16 @@ import (
 	"io"
 	"log"
 	"net"
-
-	"github.com/hashicorp/nomad/helper/pool"
 )
 
 // --- rpc server
 // https://github.com/hashicorp/nomad/blob/master/nomad/rpc.go
+
+type RPCType byte
+
+const (
+	rpcRaft RPCType = 0x01
+)
 
 type Server struct {
 	logger      *log.Logger
@@ -55,8 +59,8 @@ func (s *Server) handleConn(conn net.Conn) {
 	}
 
 	// Switch on the byte
-	switch pool.RPCType(buf[0]) {
-	case pool.RpcRaft:
+	switch RPCType(buf[0]) {
+	case rpcRaft:
 		s.raftLayer.Handoff(conn)
 	default:
 		s.logger.Printf("[ERR] RPC: unrecognized RPC byte: %v", buf[0])
