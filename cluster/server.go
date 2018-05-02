@@ -11,20 +11,20 @@ import (
 
 type Server struct {
 	logger *log.Logger
-	config *Config
+	Config *Config
 
 	// Serf
-	serf         *serf.Serf
+	Serf         *serf.Serf
 	localEventCh chan serf.Event
 	EventCh      chan serf.Event
 
 	// Raft
-	raft     *raft.Raft
+	Raft     *raft.Raft
 	LeaderCh chan bool
 
 	// Consul
 	catalog *consul.Catalog
-	agent   *consul.Agent
+	Agent   *consul.Agent
 
 	reconcileCh chan serf.Member
 }
@@ -32,7 +32,7 @@ type Server struct {
 func NewServer(config *Config, logger *log.Logger) *Server {
 	s := &Server{
 		logger:       logger,
-		config:       config,
+		Config:       config,
 		reconcileCh:  make(chan serf.Member, 10),
 		localEventCh: make(chan serf.Event, 10),
 		EventCh:      make(chan serf.Event, 10),
@@ -43,9 +43,9 @@ func NewServer(config *Config, logger *log.Logger) *Server {
 }
 
 func (s *Server) IsLeader() bool {
-	return s.raft.State() == raft.Leader
+	return s.Raft.State() == raft.Leader
 }
 
 func (s *Server) Apply(cmd []byte, timeout time.Duration) raft.ApplyFuture {
-	return s.raft.Apply(cmd, timeout)
+	return s.Raft.Apply(cmd, timeout)
 }

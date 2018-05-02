@@ -12,7 +12,7 @@ import (
 type Config struct {
 	NodeName    string
 	ServiceName string
-	//Tag         string
+
 	Tags map[string]string
 
 	SerfConfig   *serf.Config

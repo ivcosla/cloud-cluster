@@ -14,7 +14,7 @@ const (
 )
 
 func (s *Server) SetupStreamRaft(layer raft.StreamLayer, fsm *raft.FSM) error {
-	trans := raft.NewNetworkTransport(layer, 3, raftTimeout, s.config.RaftConfig.LogOutput)
+	trans := raft.NewNetworkTransport(layer, 3, raftTimeout, s.Config.RaftConfig.LogOutput)
 	return s.setupRaft(trans, fsm)
 }
 
@@ -33,39 +33,39 @@ func (s *Server) SetupTCPRaft(bindAddr string, fsm *raft.FSM) error {
 }
 
 func (s *Server) setupRaft(trans raft.Transport, fsm *raft.FSM) error {
-	s.config.Tags["raft"] = string(trans.LocalAddr())
+	s.Config.Tags["raft"] = string(trans.LocalAddr())
 
-	s.config.RaftConfig.LogOutput = s.config.LogOutput
-	s.config.RaftConfig.LocalID = raft.ServerID(s.config.NodeName)
+	s.Config.RaftConfig.LogOutput = s.Config.LogOutput
+	s.Config.RaftConfig.LocalID = raft.ServerID(s.Config.NodeName)
 
 	store := raft.NewInmemStore()
 	stable := store
 	log := store
 	snap := raft.NewDiscardSnapshotStore()
 
-	s.config.RaftConfig.NotifyCh = s.LeaderCh
+	s.Config.RaftConfig.NotifyCh = s.LeaderCh
 
-	if s.config.BootstrapExpected == 1 {
+	if s.Config.BootstrapExpected == 1 {
 		configuration := raft.Configuration{
 			Servers: []raft.Server{
 				{
-					ID:      s.config.RaftConfig.LocalID,
+					ID:      s.Config.RaftConfig.LocalID,
 					Address: trans.LocalAddr(),
 				},
 			},
 		}
 
-		if err := raft.BootstrapCluster(s.config.RaftConfig, log, stable, snap, trans, configuration); err != nil {
+		if err := raft.BootstrapCluster(s.Config.RaftConfig, log, stable, snap, trans, configuration); err != nil {
 			return fmt.Errorf("Failed to bootstrap initial cluster: %v", err)
 		}
 	}
 
-	client, err := raft.NewRaft(s.config.RaftConfig, *fsm, log, stable, snap, trans)
+	client, err := raft.NewRaft(s.Config.RaftConfig, *fsm, log, stable, snap, trans)
 	if err != nil {
 		return fmt.Errorf("Failed to start raft: %v", err)
 	}
 
-	s.raft = client
+	s.Raft = client
 
 	go s.reconcile()
 	return nil
@@ -89,7 +89,7 @@ func (s *Server) reconcile() {
 				continue
 			}
 
-			addFuture := s.raft.AddVoter(raft.ServerID(id), raft.ServerAddress(raftAddr), 0, 0)
+			addFuture := s.Raft.AddVoter(raft.ServerID(id), raft.ServerAddress(raftAddr), 0, 0)
 
 			if err := addFuture.Error(); err != nil {
 				s.logger.Printf("Failed to add peer %s to raft", id)

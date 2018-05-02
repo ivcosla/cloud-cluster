@@ -8,18 +8,18 @@ import (
 )
 
 func (s *Server) SetupSerf() error {
-	conf := s.config.SerfConfig
+	conf := s.Config.SerfConfig
 	conf.Init()
 
-	conf.Tags["id"] = s.config.NodeName
+	conf.Tags["id"] = s.Config.NodeName
 
-	for k, v := range s.config.Tags {
+	for k, v := range s.Config.Tags {
 		conf.Tags[k] = v
 	}
 
-	conf.NodeName = s.config.NodeName
-	conf.MemberlistConfig.LogOutput = s.config.LogOutput
-	conf.LogOutput = s.config.LogOutput
+	conf.NodeName = s.Config.NodeName
+	conf.MemberlistConfig.LogOutput = s.Config.LogOutput
+	conf.LogOutput = s.Config.LogOutput
 	conf.EventCh = s.localEventCh
 
 	client, err := serf.Create(conf)
@@ -27,7 +27,7 @@ func (s *Server) SetupSerf() error {
 		return err
 	}
 
-	s.serf = client
+	s.Serf = client
 	go s.eventHandler()
 
 	return nil
@@ -56,7 +56,7 @@ func (s *Server) eventHandler() {
 }
 
 func (s *Server) localMemberEvent(me serf.MemberEvent) {
-	if s.raft == nil {
+	if s.Raft == nil {
 		return
 	}
 
@@ -77,8 +77,8 @@ func (s *Server) nodeJoin(me serf.MemberEvent) {
 		s.logger.Printf("[INFO]: Member join: %s\n", m.Name)
 	}
 
-	if s.raft != nil {
-		if atomic.LoadInt32(&s.config.BootstrapExpected) != 0 {
+	if s.Raft != nil {
+		if atomic.LoadInt32(&s.Config.BootstrapExpected) != 0 {
 			s.tryBootstrap()
 		}
 	}
@@ -93,7 +93,7 @@ func (s *Server) nodeLeave(me serf.MemberEvent) {
 func (s *Server) tryBootstrap() {
 
 	servers := []raft.Server{}
-	members := s.serf.Members()
+	members := s.Serf.Members()
 	for _, member := range members {
 
 		id := member.Tags["id"]
@@ -116,7 +116,7 @@ func (s *Server) tryBootstrap() {
 		servers = append(servers, peer)
 	}
 
-	if len(servers) < int(atomic.LoadInt32(&s.config.BootstrapExpected)) {
+	if len(servers) < int(atomic.LoadInt32(&s.Config.BootstrapExpected)) {
 		return
 	}
 
@@ -124,9 +124,9 @@ func (s *Server) tryBootstrap() {
 		Servers: servers,
 	}
 
-	if err := s.raft.BootstrapCluster(configuration).Error(); err != nil {
+	if err := s.Raft.BootstrapCluster(configuration).Error(); err != nil {
 		s.logger.Printf("Failed to bootstrap cluster: %v\n", err)
 	}
 
-	atomic.StoreInt32(&s.config.BootstrapExpected, 0)
+	atomic.StoreInt32(&s.Config.BootstrapExpected, 0)
 }
