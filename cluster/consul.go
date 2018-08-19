@@ -10,6 +10,8 @@ import (
 	consul "github.com/hashicorp/consul/api"
 )
 
+var CONSUL_BOOTSTRAP_LIMIT = 10
+
 func (s *Server) SetupConsul() error {
 
 	client, err := consul.NewClient(s.Config.ConsulConfig)
@@ -56,17 +58,18 @@ func (s *Server) registerSerf() error {
 }
 
 func (s *Server) periodicHandler() {
-	if err := s.bootstrap(); err != nil {
-		panic(err)
-	}
-
+	counts := 0
 	for {
-		select {
-		case <-time.After(9 * time.Second):
-			if err := s.bootstrap(); err != nil {
-				s.logger.Printf("Bootstrap error: %v\n", err)
-			}
+		if err := s.bootstrap(); err != nil {
+			s.logger.Printf("Bootstrap error: %v\n", err)
 		}
+
+		if counts == CONSUL_BOOTSTRAP_LIMIT {
+			return
+		}
+
+		counts++
+		time.After(0 * time.Second)
 	}
 }
 
