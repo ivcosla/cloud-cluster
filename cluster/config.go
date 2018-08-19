@@ -15,6 +15,8 @@ type Config struct {
 
 	Tags map[string]string
 
+	RetryJoin []string
+
 	SerfConfig   *serf.Config
 	ConsulConfig *consul.Config
 
@@ -26,10 +28,10 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	c := &Config{
-		NodeName:    "cluster",
-		ServiceName: "cluster",
-		//Tag:               "cluster",
+		NodeName:          "cluster",
+		ServiceName:       "cluster",
 		Tags:              map[string]string{},
+		RetryJoin:         []string{},
 		SerfConfig:        serf.DefaultConfig(),
 		ConsulConfig:      consul.DefaultConfig(),
 		RaftConfig:        raft.DefaultConfig(),

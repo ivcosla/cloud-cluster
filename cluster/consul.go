@@ -58,18 +58,18 @@ func (s *Server) registerSerf() error {
 }
 
 func (s *Server) periodicHandler() {
-	counts := 0
+	attempts := 0
 	for {
 		if err := s.bootstrap(); err != nil {
 			s.logger.Printf("Bootstrap error: %v\n", err)
 		}
 
-		if counts == CONSUL_BOOTSTRAP_LIMIT {
+		if attempts == CONSUL_BOOTSTRAP_LIMIT {
 			return
 		}
 
-		counts++
-		time.After(0 * time.Second)
+		attempts++
+		time.After(10 * time.Second)
 	}
 }
 

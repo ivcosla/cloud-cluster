@@ -1,8 +1,11 @@
 package cluster
 
 import (
+	"strings"
 	"sync/atomic"
+	"time"
 
+	"github.com/hashicorp/go-discover"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/serf/serf"
 )
@@ -29,6 +32,9 @@ func (s *Server) SetupSerf() error {
 
 	s.Serf = client
 	go s.eventHandler()
+
+	// start retryJoin discover
+	go s.setupRetryJoin()
 
 	return nil
 }
@@ -129,4 +135,42 @@ func (s *Server) tryBootstrap() {
 	}
 
 	atomic.StoreInt32(&s.Config.BootstrapExpected, 0)
+}
+
+var DISCOVER_BOOTSTRAP_LIMIT = 10
+
+func (s *Server) setupRetryJoin() {
+	if len(s.Config.RetryJoin) == 0 {
+		return
+	}
+
+	d := discover.Discover{}
+	attempts := 0
+
+	for {
+		var addrs []string
+		var err error
+
+		for _, addr := range s.Config.RetryJoin {
+			if strings.HasPrefix(addr, "provider=") {
+				addrs, err = d.Addrs(addr, s.logger)
+				if err != nil {
+					s.logger.Printf("failed to query go-discover: %s", err)
+				}
+			} else {
+				addrs = append(addrs, addr)
+			}
+		}
+
+		if _, err := s.Serf.Join(addrs, true); err != nil {
+			s.logger.Printf("failed to join %v: %v", addrs, err)
+		}
+
+		if attempts == DISCOVER_BOOTSTRAP_LIMIT {
+			return
+		}
+
+		attempts++
+		time.After(10 * time.Second)
+	}
 }
