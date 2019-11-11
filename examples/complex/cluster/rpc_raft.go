@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/hashicorp/nomad/helper/pool"
+	"github.com/ferranbt/cloud-cluster/cluster"
 	"github.com/hashicorp/raft"
 )
 
@@ -60,7 +60,7 @@ func (l *RaftLayer) Dial(address raft.ServerAddress, timeout time.Duration) (net
 		return nil, err
 	}
 
-	_, err = conn.Write([]byte{byte(pool.RpcRaft)})
+	_, err = conn.Write([]byte{byte(cluster.RpcRaft)})
 	if err != nil {
 		conn.Close()
 		return nil, err

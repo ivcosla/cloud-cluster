@@ -9,6 +9,12 @@ import (
 	"github.com/hashicorp/serf/serf"
 )
 
+type RPCType byte
+
+const (
+	RpcRaft RPCType = 0x02
+)
+
 type Config struct {
 	NodeName    string
 	ServiceName string
