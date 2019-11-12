@@ -69,7 +69,10 @@ func (s *Server) localMemberEvent(me serf.MemberEvent) {
 	}
 
 	for _, m := range me.Members {
-		s.reconcileCh <- m
+		select {
+		case s.reconcileCh <- m:
+		default:
+		}
 	}
 }
 
