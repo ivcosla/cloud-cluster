@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/serf/serf"
 )
 
+// Server is a cloud-cluster server which handles a serf, raft and a consul agent instances
 type Server struct {
 	logger *log.Logger
 	Config *Config
@@ -29,6 +30,7 @@ type Server struct {
 	reconcileCh chan serf.Member
 }
 
+// NewServer creates a new cloud-cluster server
 func NewServer(config *Config, logger *log.Logger) *Server {
 	s := &Server{
 		logger:       logger,
@@ -42,10 +44,12 @@ func NewServer(config *Config, logger *log.Logger) *Server {
 	return s
 }
 
+// IsLeader returns whether or not this server is leader in a raft cluster
 func (s *Server) IsLeader() bool {
 	return s.Raft.State() == raft.Leader
 }
 
+// Apply is shorthand for (*Server).Raft.Apply(cmd []byte, timeout time.Duration) raft.ApplyFuture
 func (s *Server) Apply(cmd []byte, timeout time.Duration) raft.ApplyFuture {
 	return s.Raft.Apply(cmd, timeout)
 }

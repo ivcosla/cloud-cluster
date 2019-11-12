@@ -9,12 +9,15 @@ import (
 	"github.com/hashicorp/serf/serf"
 )
 
+// RPCType represents different types of rpc to be used
 type RPCType byte
 
 const (
-	RpcRaft RPCType = 0x02
+	// RPCRaft is the Raft rpc type
+	RPCRaft RPCType = 0x02
 )
 
+// Config for the cluster server
 type Config struct {
 	NodeName    string
 	ServiceName string
@@ -32,6 +35,7 @@ type Config struct {
 	LogOutput io.Writer
 }
 
+// DefaultConfig returns a cluster server config with default values
 func DefaultConfig() *Config {
 	c := &Config{
 		NodeName:          "cluster",

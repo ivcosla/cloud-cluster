@@ -10,8 +10,10 @@ import (
 	consul "github.com/hashicorp/consul/api"
 )
 
-var CONSUL_BOOTSTRAP_LIMIT = 10
+// ConsulBootstrapLimit is the maximum members to expect in a consul datacenter
+var ConsulBootstrapLimit = 10
 
+// SetupConsul starts a consul datacenter and handles it's events
 func (s *Server) SetupConsul() error {
 
 	client, err := consul.NewClient(s.Config.ConsulConfig)
@@ -64,7 +66,7 @@ func (s *Server) periodicHandler() {
 			s.logger.Printf("Bootstrap error: %v\n", err)
 		}
 
-		if attempts == CONSUL_BOOTSTRAP_LIMIT {
+		if attempts == ConsulBootstrapLimit {
 			return
 		}
 

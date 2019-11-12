@@ -60,7 +60,7 @@ func (l *RaftLayer) Dial(address raft.ServerAddress, timeout time.Duration) (net
 		return nil, err
 	}
 
-	_, err = conn.Write([]byte{byte(cluster.RpcRaft)})
+	_, err = conn.Write([]byte{byte(cluster.RPCRaft)})
 	if err != nil {
 		conn.Close()
 		return nil, err

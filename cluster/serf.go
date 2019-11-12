@@ -10,6 +10,10 @@ import (
 	"github.com/hashicorp/serf/serf"
 )
 
+// DiscoverBootstrapLimit is the limit of attempts for the serf agent to try to join a cluster
+var DiscoverBootstrapLimit = 10
+
+// SetupSerf starts serf in a gouroutine and handles it's events
 func (s *Server) SetupSerf() error {
 	conf := s.Config.SerfConfig
 	conf.Init()
@@ -40,23 +44,17 @@ func (s *Server) SetupSerf() error {
 }
 
 func (s *Server) eventHandler() {
-	for {
-		select {
-		case e := <-s.localEventCh:
+	for e := range s.localEventCh {
 
-			select {
-			case s.EventCh <- e:
-			default:
-			}
+		s.EventCh <- e
 
-			switch e.EventType() {
-			case serf.EventMemberJoin:
-				s.nodeJoin(e.(serf.MemberEvent))
-				s.localMemberEvent(e.(serf.MemberEvent))
-			case serf.EventMemberLeave, serf.EventMemberFailed:
-				s.nodeLeave(e.(serf.MemberEvent))
-				s.localMemberEvent(e.(serf.MemberEvent))
-			}
+		switch e.EventType() {
+		case serf.EventMemberJoin:
+			s.nodeJoin(e.(serf.MemberEvent))
+			s.localMemberEvent(e.(serf.MemberEvent))
+		case serf.EventMemberLeave, serf.EventMemberFailed:
+			s.nodeLeave(e.(serf.MemberEvent))
+			s.localMemberEvent(e.(serf.MemberEvent))
 		}
 	}
 }
@@ -71,10 +69,7 @@ func (s *Server) localMemberEvent(me serf.MemberEvent) {
 	}
 
 	for _, m := range me.Members {
-		select {
-		case s.reconcileCh <- m:
-		default:
-		}
+		s.reconcileCh <- m
 	}
 }
 
@@ -137,8 +132,6 @@ func (s *Server) tryBootstrap() {
 	atomic.StoreInt32(&s.Config.BootstrapExpected, 0)
 }
 
-var DISCOVER_BOOTSTRAP_LIMIT = 10
-
 func (s *Server) setupRetryJoin() {
 	if len(s.Config.RetryJoin) == 0 {
 		return
@@ -166,7 +159,7 @@ func (s *Server) setupRetryJoin() {
 			s.logger.Printf("failed to join %v: %v", addrs, err)
 		}
 
-		if attempts == DISCOVER_BOOTSTRAP_LIMIT {
+		if attempts == DiscoverBootstrapLimit {
 			return
 		}
 

@@ -13,11 +13,13 @@ const (
 	raftTimeout = 10 * time.Second
 )
 
+// SetupStreamRaft starts raft with a Stream used as both dialer and listener for the underlying network transport
 func (s *Server) SetupStreamRaft(layer raft.StreamLayer, fsm *raft.FSM) error {
 	trans := raft.NewNetworkTransport(layer, 3, raftTimeout, s.Config.RaftConfig.LogOutput)
 	return s.setupRaft(trans, fsm)
 }
 
+// SetupTCPRaft starts raft bound to the given tcp address
 func (s *Server) SetupTCPRaft(bindAddr string, fsm *raft.FSM) error {
 	addr, err := net.ResolveTCPAddr("tcp", bindAddr)
 	if err != nil {
@@ -72,28 +74,25 @@ func (s *Server) setupRaft(trans raft.Transport, fsm *raft.FSM) error {
 }
 
 func (s *Server) reconcile() {
-	for {
-		select {
-		case member := <-s.reconcileCh:
-			fmt.Println("reconcile")
+	for member := range s.reconcileCh {
+		fmt.Println("reconcile")
 
-			id := member.Tags["id"]
-			if id == "" {
-				s.logger.Printf("Id not found for member addr: %s", member.Addr.String())
-				continue
-			}
+		id := member.Tags["id"]
+		if id == "" {
+			s.logger.Printf("Id not found for member addr: %s", member.Addr.String())
+			continue
+		}
 
-			raftAddr := member.Tags["raft"]
-			if raftAddr == "" {
-				s.logger.Printf("Raft addr not found for member: %s", id)
-				continue
-			}
+		raftAddr := member.Tags["raft"]
+		if raftAddr == "" {
+			s.logger.Printf("Raft addr not found for member: %s", id)
+			continue
+		}
 
-			addFuture := s.Raft.AddVoter(raft.ServerID(id), raft.ServerAddress(raftAddr), 0, 0)
+		addFuture := s.Raft.AddVoter(raft.ServerID(id), raft.ServerAddress(raftAddr), 0, 0)
 
-			if err := addFuture.Error(); err != nil {
-				s.logger.Printf("Failed to add peer %s to raft", id)
-			}
+		if err := addFuture.Error(); err != nil {
+			s.logger.Printf("Failed to add peer %s to raft", id)
 		}
 	}
 }
