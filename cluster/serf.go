@@ -46,7 +46,10 @@ func (s *Server) SetupSerf() error {
 func (s *Server) eventHandler() {
 	for e := range s.localEventCh {
 
-		s.EventCh <- e
+		select {
+		case s.EventCh <- e:
+		default:
+		}
 
 		switch e.EventType() {
 		case serf.EventMemberJoin:
